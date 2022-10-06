@@ -1,0 +1,9 @@
+[package]
+name = "mandelbrot-threaded"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crossbeam = "0.8.2"
+image = "0.24.4"
+num = "0.4.0"
