@@ -1,5 +1,7 @@
 use std::fs::{OpenOptions, File};
-use std::io::{Write, BufReader, BufRead, Result, Seek};
+use std::io::{Write, BufReader, BufRead, Seek, Error, ErrorKind};
+
+use crate::utils::{check_db_file, get_db_file_path};
 
 pub struct Record {
     pub id: i32,
@@ -18,35 +20,38 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn open(filename: &str) -> Database {
+    pub fn open() -> Database {
+        check_db_file().unwrap();
+        let db_file = get_db_file_path();
+
         let file = OpenOptions::new()
             .create(true)
             .read(true)
             .write(true)
-            .open(filename)
+            .open(db_file)
             .unwrap();
         
         Database { file }
     }
 
-    pub fn add_record(&mut self, record: &Record) {
+    pub fn add_record(&mut self, record: &Record) -> Result<(), Error> {
         let line = format!("{},{}", record.id, record.content);
-        println!("{}", line);
-        writeln!(self.file, "{}", line).unwrap();
-        println!("Item added: {}", record.content);
+        writeln!(self.file, "{}", line)
     }
 
-    pub fn read_records(&mut self) -> Vec<Record> {
+    pub fn read_records(&mut self) -> Result<Vec<Record>, Error> {
         let reader = BufReader::new(&self.file);
-        reader
-            .lines()
-            .map_while(Result::ok)
-            .filter(|line| !line.is_empty())
-            .map(|line| parse_record_line(&line))
-            .collect()
+        Ok(
+            reader
+                .lines()
+                .map_while(Result::ok)
+                .filter(|line| !line.is_empty())
+                .map(|line| parse_record_line(&line))
+                .collect()
+        )
     }
 
-    pub fn remove_record(&mut self, id: i32) {
+    pub fn remove_record(&mut self, id: i32) -> Result<(), Error> {
         let mut new_contents = Vec::new();
 
         let reader = BufReader::new(&self.file);
@@ -64,7 +69,8 @@ impl Database {
 
         if !delete_flag {
             println!("No record found with id: {}", id);
-            return;
+            
+            Err(Error::new(ErrorKind::Other, "No record found"))
         } else {
             let mut new_contents = new_contents.join("\n");
             new_contents.push('\n');
@@ -72,7 +78,7 @@ impl Database {
             self.file.write_all(new_contents.as_bytes()).unwrap();
             self.file.set_len(new_contents.len() as u64).unwrap();
 
-            println!("Item removed: {}", id)
+            Ok(())
         }
     }
 }
