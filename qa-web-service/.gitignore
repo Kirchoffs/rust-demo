@@ -1,0 +1,5 @@
+data/
+migrations/
+stderr.log
+Cargo.lock
+.env

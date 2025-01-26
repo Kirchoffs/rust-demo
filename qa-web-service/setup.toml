@@ -1,0 +1,4 @@
+log_level = "info"
+database_host = "fudou:6174@localhost"
+database_port = 5432
+database_name = "qa"
